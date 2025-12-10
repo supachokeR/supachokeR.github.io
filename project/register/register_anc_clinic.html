@@ -1,1 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Registration</title>
+    <meta name="description" content="Dynamic Registration for LIFF App" />
+    <meta name="author" content="iton5" />
+    <meta property="og:title" content="Dynamic Registration-iton5-thailand" />
+    <meta property="og:description" content="Dynamic Registration for LIFF App" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lh3.googleusercontent.com/d/1Ck_OCfEW4dEp3A1k9yfQplYmW7qmwzFF" />
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+   <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;700&display=swap');
+        
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            background: linear-gradient(135deg, #1c1c2e 0%, #2d2d44 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
 
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+       
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        
+        .input-field {
+            @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-300 ease-in-out;
+        }
+        .input-field:focus {
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.15);
+            transform: translateY(-1px);
+        }
+        
+       
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.4) sepia(1) saturate(3) hue-rotate(230deg); 
+            opacity: 0.7;
+            transition: 0.3s;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+            background-color: rgba(118, 75, 162, 0.1);
+            transform: scale(1.1);
+        }
+        
+       
+        .input-field:invalid:not(:placeholder-shown) {
+            border-color: #ef4444;
+        }
+        .input-field:valid:not(:placeholder-shown) {
+            border-color: #10b981;
+        }
+
+      
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse-btn {
+            0% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(118, 75, 162, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(118, 75, 162, 0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .btn-modern {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-modern:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .btn-modern:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .btn-pulse {
+            animation: pulse-btn 2s infinite;
+        }
+        
+        
+        .btn-modern:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+            animation: none;
+        }
+
+        
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(28, 28, 46, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #loading-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+   
+    <div id="loading-overlay">
+        <img src="https://developers.line.biz/media/line-mini-app/LINE_spinner_light.svg" alt="Loading..." class="w-16 h-16 mb-4">
+        <p id="loading-text" class="text-white text-lg font-medium tracking-wide">กำลังโหลด...</p>
+    </div>
+
+   
+    <div class="glass-card w-full max-w-md rounded-3xl overflow-hidden animate-fade-in">
+        
+        <div class="gradient-bg p-8 text-white text-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+            <h1 class="text-3xl font-bold relative z-10">ลงทะเบียน</h1>
+            <p class="text-purple-100 text-sm mt-2 relative z-10 opacity-90">กรอกข้อมูลของคุณเพื่อดำเนินการต่อ</p>
+        </div>
+
+        <div class="p-8">
+            <form id="dynamic-form" class="space-y-6">
+               
+                <div id="form-loading" class="text-center py-10">
+                    <img src="https://developers.line.biz/media/line-mini-app/LINE_spinner_light.svg" class="w-10 h-10 mx-auto mb-2 animate-spin">
+                    <p class="text-gray-500 text-sm">กำลังเตรียมแบบฟอร์ม...</p>
+                </div>
+            </form>
+
+            <button id="submit-btn" disabled class="btn-modern w-full mt-8 text-white font-bold py-4 px-6 rounded-xl shadow-lg hidden flex items-center justify-center gap-2">
+                <span>ยืนยันข้อมูล</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+       
+        const EDGE_FUNCTION_URL = 'https://dywoeqhibprbxldqyfya.supabase.co/functions/v1/dynamic-register'; 
+        const LIFF_ID = 'https://liff.line.me/2008653460-E6lO6OpA'; 
+  
+        const formElement = document.getElementById('dynamic-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const formLoading = document.getElementById('form-loading');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+
+       
+        function showLoading(message = 'กำลังประมวลผล...') {
+            loadingText.textContent = message;
+            loadingOverlay.classList.add('show');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.remove('show');
+        }
+
+       
+        function formatThaiValue(value) {
+            if (typeof value === 'string') {
+               
+                if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                    const [y, m, d] = value.split('-').map(Number);
+                    const date = new Date(y, m - 1, d);
+                    return date.toLocaleDateString('th-TH', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+                }
+                
+                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('th-TH', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    }) + ' น.';
+                }
+            }
+            return value;
+        }
+
+        
+        function getThaiDateTime() {
+            const now = new Date();
+            const dateOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const datePart = now.toLocaleDateString('th-TH', dateOptions); 
+            const timePart = now.toLocaleTimeString('th-TH', timeOptions); 
+            return `${datePart} เวลา ${timePart} น.`;
+        }
+
+        function formatLabel(colName) {
+            return colName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+       
+        function validateForm() {
+            const isValid = formElement.checkValidity();
+            if (isValid) {
+                submitBtn.removeAttribute('disabled');
+                submitBtn.classList.add('btn-pulse');
+            } else {
+                submitBtn.setAttribute('disabled', 'true');
+                submitBtn.classList.remove('btn-pulse');
+            }
+        }
+
+        
+        function generateFlexMessage(data) {
+            const ignoredFields = ['id', 'created_at', 'user_id', 'display_name', 'picture_url'];
+            const thaiDateTime = getThaiDateTime();
+            
+            let heroImage = null;
+            
+            const contents = Object.entries(data)
+                .filter(([key]) => !ignoredFields.includes(key))
+                .map(([key, value]) => {
+                    let displayVal = value;
+                   
+                    const lowerKey = key.toLowerCase();
+                    
+                    
+                    if (typeof value === 'string' && value.startsWith('http') && 
+                       (lowerKey.includes('image') || lowerKey.includes('photo') || lowerKey.includes('picture'))) {
+                        heroImage = value;
+                        displayVal = '[รูปภาพแนบ]';
+                    } else if (typeof value === 'boolean') {
+                        displayVal = value ? '✅ ใช่' : '❌ ไม่ใช่';
+                    } else if (!value && value !== 0) {
+                        displayVal = '-';
+                    } else {
+                       
+                        displayVal = formatThaiValue(value);
+                    }
+
+                    return {
+                        "type": "box",
+                        "layout": "baseline",
+                        "spacing": "sm",
+                        "contents": [
+                            { "type": "text", "text": formatLabel(key), "color": "#aaaaaa", "size": "sm", "flex": 2 },
+                            { "type": "text", "text": String(displayVal), "wrap": true, "color": "#666666", "size": "sm", "flex": 4 }
+                        ]
+                    };
+                });
+
+            const bubble = {
+                "type": "bubble",
+                "body": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        { "type": "text", "text": "ลงทะเบียนสำเร็จ", "weight": "bold", "size": "xl", "color": "#1DB446" },
+                        { "type": "text", "text": thaiDateTime, "size": "xs", "color": "#aaaaaa", "margin": "xs" },
+                        { "type": "separator", "margin": "md" },
+                        { "type": "box", "layout": "vertical", "margin": "md", "spacing": "sm", "contents": contents },
+                        { "type": "separator", "margin": "md" },
+                        { 
+                            "type": "box", 
+                            "layout": "horizontal", 
+                            "margin": "md",
+                            "contents": [
+                                { "type": "text", "text": "สถานะ: เรียบร้อย", "size": "xs", "color": "#aaaaaa", "align": "end" }
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            if (heroImage) {
+                bubble.hero = {
+                    "type": "image",
+                    "url": heroImage,
+                    "size": "full",
+                    "aspectRatio": "20:13",
+                    "aspectMode": "cover"
+                };
+            }
+
+            return {
+                "type": "flex",
+                "altText": "ลงทะเบียนสำเร็จ",
+                "contents": bubble
+            };
+        }
+
+        const fileToBase64 = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        };
+
+        function createInputField(col) {
+            const { col_name, data_type, is_nullable } = col;
+            const wrapper = document.createElement('div');
+            wrapper.className = "group"; 
+            
+            const label = document.createElement('label');
+            label.className = 'block text-sm font-medium text-gray-700 mb-2 group-hover:text-purple-600 transition-colors';
+            label.textContent = formatLabel(col_name);
+            label.innerHTML += ' <span class="text-red-500">*</span>';
+
+            let input;
+            
+            const lowerName = col_name.toLowerCase();
+            if (data_type === 'text' && (lowerName.includes('image') || lowerName.includes('photo') || lowerName.includes('picture'))) {
+                input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.className = 'hidden';
+                input.id = `file-${col_name}`;
+                
+                const uploadBtn = document.createElement('label');
+                uploadBtn.htmlFor = `file-${col_name}`;
+                uploadBtn.className = 'flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-purple-50 hover:border-purple-400 transition-all duration-300';
+                uploadBtn.innerHTML = `
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6 text-gray-400 group-hover:text-purple-500">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <p class="text-xs">คลิกเพื่ออัปโหลดรูปภาพ</p>
+                    </div>
+                    <img class="hidden w-full h-full object-cover rounded-xl" id="preview-${col_name}">
+                `;
+
+                input.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = uploadBtn.querySelector('img');
+                            const placeholder = uploadBtn.querySelector('div');
+                            img.src = e.target.result;
+                            img.classList.remove('hidden');
+                            placeholder.classList.add('hidden');
+                            uploadBtn.classList.add('border-purple-500', 'border-solid');
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                    validateForm();
+                });
+
+                wrapper.appendChild(label);
+                wrapper.appendChild(input);
+                wrapper.appendChild(uploadBtn);
+                input.name = col_name;
+                input.required = true;
+                return wrapper;
+            }
+
+            if (data_type === 'bool') {
+                const cbWrapper = document.createElement('div');
+                cbWrapper.className = 'flex items-center mt-3';
+                
+                const toggleLabel = document.createElement('label');
+                toggleLabel.className = 'relative inline-flex items-center cursor-pointer';
+                
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.name = col_name;
+                input.className = 'sr-only peer';
+                
+                const toggleDiv = document.createElement('div');
+                toggleDiv.className = "w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600";
+                
+                const textLabel = document.createElement('span');
+                textLabel.className = 'ml-3 text-sm font-medium text-gray-900';
+                textLabel.textContent = 'ยืนยัน / เปิดใช้งาน';
+
+                toggleLabel.appendChild(input);
+                toggleLabel.appendChild(toggleDiv);
+                toggleLabel.appendChild(textLabel);
+                
+                wrapper.appendChild(label);
+                wrapper.appendChild(toggleLabel);
+                return wrapper;
+            } 
+            
+            if (['int4', 'int8', 'float4', 'float8', 'numeric'].includes(data_type)) {
+                input = document.createElement('input');
+                input.type = 'number';
+            } else if (data_type === 'date') {
+                input = document.createElement('input');
+                input.type = 'date';
+            } else if (['timestamp', 'timestamptz'].includes(data_type)) {
+                input = document.createElement('input');
+                input.type = 'datetime-local';
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                if (lowerName.includes('email')) input.type = 'email';
+                if (lowerName.includes('phone')) input.type = 'tel';
+            }
+            
+            input.name = col_name;
+            input.className = 'input-field';
+            input.placeholder = `ระบุ ${formatLabel(col_name)}`;
+            
+            input.required = true;
+
+            input.addEventListener('input', validateForm);
+            input.addEventListener('change', validateForm);
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(input);
+            return wrapper;
+        }
+
+        async function initForm() {
+            try {
+                formLoading.style.display = 'block';
+                const res = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'getSchema' })
+                });
+                
+                if (!res.ok) throw new Error((await res.json()).error || 'Failed to fetch schema');
+                const { schema } = await res.json();
+                
+                formLoading.style.display = 'none';
+                if (!schema || schema.length === 0) {
+                    formElement.innerHTML = '<div class="text-center text-red-500 p-4 bg-red-50 rounded-xl">ไม่พบข้อมูล Column</div>';
+                    return;
+                }
+                
+                schema.forEach((col, index) => {
+                    const field = createInputField(col);
+                    field.style.animation = `fadeIn 0.5s ease-out forwards ${index * 0.1}s`;
+                    field.style.opacity = '0';
+                    formElement.appendChild(field);
+                });
+                
+                submitBtn.classList.remove('hidden');
+                
+                formElement.addEventListener('change', validateForm);
+                formElement.addEventListener('input', validateForm);
+                validateForm(); 
+
+            } catch (err) {
+                console.error(err);
+                formLoading.innerHTML = `<div class="text-red-500 text-center text-sm">${err.message}</div>`;
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (!formElement.checkValidity()) {
+                formElement.reportValidity();
+                return;
+            }
+            
+            showLoading('กำลังบันทึกข้อมูล...');
+            submitBtn.disabled = true;
+
+            const formData = new FormData(formElement);
+            const data = {};
+            
+            try {
+                for (let [key, val] of formData.entries()) {
+                    const input = formElement.querySelector(`[name="${key}"]`);
+                    
+                    if (input.type === 'file') {
+                        const file = input.files[0];
+                        if (file) {
+                            if (file.size > 5 * 1024 * 1024) throw new Error(`ไฟล์ ${file.name} ใหญ่เกินไป (Max 5MB)`);
+                            const base64Str = await fileToBase64(file);
+                            data[key] = {
+                                filename: file.name,
+                                mimeType: file.type,
+                                base64: base64Str
+                            };
+                        } else {
+                            data[key] = null;
+                        }
+                    } else if (input.type === 'checkbox') {
+                        data[key] = input.checked;
+                    } else if (input.type === 'number') {
+                        data[key] = val ? Number(val) : null;
+                    } else {
+                        data[key] = val;
+                    }
+                }
+                
+                formElement.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    if (!data.hasOwnProperty(cb.name)) data[cb.name] = cb.checked;
+                });
+
+                if (liff.isInClient() && liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    data['user_id'] = profile.userId;
+                    data['display_name'] = profile.displayName;
+                    data['picture_url'] = profile.pictureUrl;
+                }
+
+                const res = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'submit', formData: data })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || 'Submit failed');
+                }
+
+                const responseData = await res.json();
+                const finalData = responseData.data;
+
+                if (liff.isInClient()) {
+                    try {
+                        const flexMsg = generateFlexMessage(finalData);
+                        await liff.sendMessages([flexMsg]);
+                    } catch (liffErr) { console.warn('LIFF Send Error:', liffErr); }
+                }
+
+                hideLoading();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: 'บันทึกข้อมูลเรียบร้อยแล้ว',
+                    confirmButtonColor: '#667eea',
+                    background: '#fff',
+                    borderRadius: '1rem'
+                }).then(() => {
+                    if (liff.isInClient()) liff.closeWindow();
+                    else formElement.reset();
+                    validateForm(); 
+                });
+
+            } catch (err) {
+                hideLoading();
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'เกิดข้อผิดพลาด', 
+                    text: err.message,
+                    confirmButtonColor: '#ef4444'
+                });
+            } finally {
+                submitBtn.disabled = false;
+                validateForm(); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (LIFF_ID) {
+                try {
+                    await liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true });
+                    if (!liff.isLoggedIn()) {
+                        liff.login({ redirectUri: window.location.href });
+                        return;
+                    }
+                } catch (e) { console.error('LIFF Init Error:', e); }
+            }
+            initForm();
+            submitBtn.addEventListener('click', handleSubmit);
+        });
+    </script>
+</body>
+</html>
